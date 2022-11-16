@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+</head>
+<body>
+    <h1>This page is for acessing PDFS that you have already uploaded.</h1>
+    <p>Here you can insert the pdf ID, provided by the console after uploading a PDF, and a json file.</p>
+    <p>This form will take the ID and json and fill out the chosen pdf with the json data.</p>
+    <form action="/access" method="post" enctype="multipart/form-data">
+        <label for="fname">Insert the ID of the PDF to access it:</label>
+        <input type="text" id="PDFID" name="PDFID"><br><br>
+        <input type="file" id="jsonFile" name="jsonFile" accept=".json"><br><br>
+        <input type="submit" value="Submit">
+    </form>
+    <a href="http://localhost:1337/upload">If you want to upload a new PDF instead click here.</a>
+</body>
+</html>

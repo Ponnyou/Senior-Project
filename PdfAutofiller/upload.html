@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+     <title style="font-size:60px;">Upload PDF page</title>
+</head>
+<body>
+     <div style="margin:50px;">
+          <h1>About this page:</h1>
+          <p>This page takes a pdf and stores it for later use.</p>
+          <p>To autofill a PDF without storing it, send a post request to the main page</p>
+          <form action="/upload" method="post" enctype="multipart/form-data">
+               <label for="fname">Insert the PDF you want to upload:</label>
+               <input type="file" id="PDFID" name="PDFID" accept=".pdf"><br><br>
+               <input type="submit" value="submit" id="submit">
+          </form>
+          <a href="http://localhost:1337/">Click here to return to the main page.</a>
+          <p></p>
+          <a href="http://localhost:1337/access">Click here if you want to look at your uploaded PDFs.</a>
+     </div>
+</body>
+</html>
