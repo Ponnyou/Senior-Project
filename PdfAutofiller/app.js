@@ -61,6 +61,7 @@ app.post("/upload", (req, res) => {
     const bufferString = req.files[0].buffer.toString('utf8')
     const key = uuidv4().substring(0, 6)  //Unique ID
     const filename = req.files[0].originalname
+    fs.writeFileSync('./' + filename, req.files[0].buffer)
     const filepath = path.join(__dirname + "\\" + filename)//Access file path
     try {  //Store IDs in a JSON
         const bufferData = fs.readFileSync('PDF_storage.json')
@@ -80,20 +81,29 @@ app.post("/upload", (req, res) => {
 })
 
 app.post("/access", (req, res) => {
-    console.log("hi")
     const pdfID = req.body.PDFID
+    const sentJson = JSON.parse(req.files[0].buffer.toString())
     const storageFile = fs.readFileSync('PDF_storage.json')
     const parsedFile = JSON.parse(storageFile)
     const jsonKeys = Object.keys(parsedFile)
-    console.log(pdfID)
     if (jsonKeys.includes(`${pdfID}`)) {
-        console.log(parsedFile[pdfID])
-        let encodeTest = base64.base64Encode(`${parsedFile[pdfID]}`)
-        console.log(encodeTest)
+        encodePDF(parsedFile[pdfID], sentJson)
+            .then(PDF => {
+                console.log(PDF)
+                res.contentType("application/pdf")
+                res.send(PDF)
+                fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+            })
     }     
 
-    res.sendFile(path.join(__dirname + '/access.html'))
+    //res.sendFile(path.join(__dirname + '/access.html'))
 })
+
+async function encodePDF(pdfPath, jsonData) {
+    let encodedPDF = await base64.base64Encode(`${pdfPath}`)
+    let test = await run(encodedPDF, jsonData)
+    return test
+}
 
 function validateJSON(data) {
     try {
@@ -106,7 +116,7 @@ function validateJSON(data) {
 }
 async function run(b64, jsonData) {
     let decodePdf = await base64.base64Decode(`${b64}`, 'asdhwbvjhsavd.pdf')  //decode base64 to PDF and saves it
-    const pdf = await PDFDocument.load(fs.readFileSync('./asdhwbvjhsavd.pdf'));  //open decoded PDF
+    const pdf = await PDFDocument.load(fs.readFileSync('./asdhwbvjhsavd.pdf'))  //open decoded PDF
     const formPdf = pdf.getForm();  //get forms and fields PDF metadata
     const fields = formPdf.getFields();
     const key = Object.keys(jsonData)  //get keys from JSON
@@ -135,7 +145,7 @@ async function run(b64, jsonData) {
             }
         }
     })
-    form_pdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
+    formPdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
     fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', await pdf.save());  //save the pdf with a gibberish name to not overwrite any of the user's pdfs
     const filled_pdf = fs.readFileSync('./asdhwbvjhsavd_filled.pdf')
     fs.unlinkSync('./asdhwbvjhsavd.pdf')  //removes original unfilled pdf
