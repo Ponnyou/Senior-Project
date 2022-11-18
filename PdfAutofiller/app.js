@@ -55,10 +55,12 @@ app.get("/access", (req, res) => {  //access uploaded files page path
     res.sendFile(path.join(__dirname + '/access.html'))
 })
 
+app.get("/retrieve", (req, res) => { //retrieve the keys of uploaded pdfs
+    res.sendFile(__dirname + '/retrieve.html')
+})
+
 app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
-    b64 = req.files[0].buffer.toString('base64') //encoding
-    const bufferString = req.files[0].buffer.toString('utf8')
     const key = uuidv4().substring(0, 6)  //Unique ID
     const filename = req.files[0].originalname
     fs.writeFileSync('./' + filename, req.files[0].buffer)
@@ -70,8 +72,8 @@ app.post("/upload", (req, res) => {
         const newData = JSON.stringify(parseData)
         fs.writeFileSync('PDF_storage.json', newData)
     } catch (e) {  //error
-        var test = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
-        fs.appendFile('PDF_storage.json', test, err => {
+        var newJson = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
+        fs.appendFile('PDF_storage.json', newJson, err => {
             if (err) {
                 throw err
             }
@@ -97,6 +99,18 @@ app.post("/access", (req, res) => {
     }     
 
     //res.sendFile(path.join(__dirname + '/access.html'))
+})
+
+app.post("/retrieve", (req, res) => {
+    const checkFile = req.files[0].originalname
+    const filePath = path.join(__dirname + "\\" + checkFile)
+    try {
+        const bufferJson = fs.readFileSync('PDF_storage.json')
+        const parseData = JSON.parse(bufferData)
+    }
+    catch (e) {
+        console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
+    }
 })
 
 async function encodePDF(pdfPath, jsonData) {

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title style="font-size:60px;">Retrieval PDF page</title>
+</head>
+<body>
+    <h1>This page is for acessing PDF IDs of PDFs that you have already uploaded.</h1>
+    <form action="/retrieve" method="post" enctype="multipart/form-data">
+        <label for="fname">Insert the PDF that you would like to look up:</label>
+        <input type="file" id="PDFID" name="PDFID" accept=".pdf"><br><br>
+        <input type="submit">
+    </form>
+    <a href="http://localhost:1337/">Click here to return to the main page.</a>
+    <p></p>
+    <a href="http://localhost:1337/upload">If you want to upload a new PDF instead click here.</a>
+</body>
+</html>
