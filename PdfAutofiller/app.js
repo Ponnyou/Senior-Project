@@ -5,7 +5,7 @@ const multer = require('multer')
 const upload = multer()
 const base64 = require('base64topdf');
 const express = require('express')
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4, validate } = require('uuid');
 var bodyParser = require('body-parser')
 const app = express()
 const path = require('path')
@@ -22,7 +22,7 @@ app.use(express.static('public'))
 const port = 1337  //Host on port 1337
 
 app.post("/", (req, res) => {
-   var stop = 0 //If this variable equals 1 it means that either the JSON or PDF file is empty
+    var stop = 0 //If this variable equals 1 it means that either the JSON or PDF file is empty
 
     if (validateJSON(req.files[0].buffer.toString())) {
         var jsonData = req.files[0].buffer.toString()  //If JSON is the first file
@@ -30,16 +30,16 @@ app.post("/", (req, res) => {
         b64 = req.files[1].buffer.toString('base64')
     }
     else if (validateJSON(req.files[1].buffer.toString())) {
-         var jsonData = req.files[1].buffer.toString() //If PDF is the first file
-         jsonData = JSON.parse(jsonData)
-         b64 = req.files[0].buffer.toString('base64')
+        var jsonData = req.files[1].buffer.toString() //If PDF is the first file
+        jsonData = JSON.parse(jsonData)
+        b64 = req.files[0].buffer.toString('base64')
     }
 
     else { //If the JSON file is not provided
-         console.log("The JSON file is empty or not provided")
-         res.send("The JSON file is empty or not provided")
-         stop = 1
-         res.end()
+        console.log("The JSON file is empty or not provided")
+        res.send("The JSON file is empty or not provided")
+        stop = 1
+        res.end()
     }
 
     if (b64.length == 0 && stop == 0) { //If the PDF file is empty
@@ -80,41 +80,54 @@ app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
     const filename = req.files[0].originalname
-    fs.writeFileSync('./' + filename, req.files[0].buffer)
-    const filepath = path.join(__dirname + "\\" + filename)//Access file path
-    try {  //Store IDs in a JSON
-        const bufferData = fs.readFileSync('PDF_storage.json')
-        const parseData = JSON.parse(bufferData)
-        parseData[key] = filepath
-        const newData = JSON.stringify(parseData)
-        fs.writeFileSync('PDF_storage.json', newData)
-    } catch (e) {  //error
-        var newJson = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
-        fs.appendFile('PDF_storage.json', newJson, err => {
-            if (err) {
-                throw err
-            }
-        })
+  
+    if (req.files[0].size == 0) {
+        console.log("This PDF file is empty")
     }
-    console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
+    else {
+        fs.writeFileSync('./' + filename, req.files[0].buffer)
+        const filepath = path.join(__dirname + "\\" + filename)//Access file path
+        try {  //Store IDs in a JSON
+            const bufferData = fs.readFileSync('PDF_storage.json')
+            const parseData = JSON.parse(bufferData)
+            parseData[key] = filepath
+            const newData = JSON.stringify(parseData)
+            fs.writeFileSync('PDF_storage.json', newData)
+        } catch (e) {  //error
+            var newJson = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
+            fs.appendFile('PDF_storage.json', newJson, err => {
+                if (err) {
+                    throw err
+                }
+            })
+        }
+        console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
+    }
 })
 
 app.post("/access", (req, res) => {
     const pdfID = req.body.PDFID
-    const sentJson = JSON.parse(req.files[0].buffer.toString())
-    const storageFile = fs.readFileSync('PDF_storage.json')
-    const parsedFile = JSON.parse(storageFile)
-    const jsonKeys = Object.keys(parsedFile)
-    if (jsonKeys.includes(`${pdfID}`)) {
-        encodePDF(parsedFile[pdfID], sentJson)
-            .then(PDF => {
-                console.log(PDF)
-                res.contentType("application/pdf")
-                res.send(PDF)
-                fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
-            })
-    }     
+    const verify = validateJSON(req.files[0].buffer.toString())
 
+    if (verify) {
+        const sentJson = JSON.parse(req.files[0].buffer.toString())
+        const storageFile = fs.readFileSync('PDF_storage.json')
+        const parsedFile = JSON.parse(storageFile)
+        const jsonKeys = Object.keys(parsedFile)
+        if (jsonKeys.includes(`${pdfID}`)) {
+            encodePDF(parsedFile[pdfID], sentJson)
+                .then(PDF => {
+                    console.log(PDF)
+                    res.contentType("application/pdf")
+                    res.send(PDF)
+                    fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+                })
+        }
+    }
+    else {
+        console.log("The JSON file submitted is empty")
+        res.sendFile(path.join(__dirname + '/access.html'))
+    }
     //res.sendFile(path.join(__dirname + '/access.html'))
 })
 
@@ -174,7 +187,7 @@ async function run(b64, jsonData) {
     const key = Object.keys(jsonData)  //get keys from JSON
     const valid = verify(fields, key, b64)
     var matches = 0
-    
+
     if (valid == 0) {
         fields.forEach(field => {  //for every field
             const type = field.constructor.name
@@ -206,8 +219,8 @@ async function run(b64, jsonData) {
             }
         })
     }
-    console.log("You your json and PDF have",matches,"matching fields")
-    form_pdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
+    console.log("You your json and PDF have", matches, "matching fields")
+    formPdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
     fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', await pdf.save());  //save the pdf with a gibberish name to not overwrite any of the user's pdfs
     const filled_pdf = fs.readFileSync('./asdhwbvjhsavd_filled.pdf')
     fs.unlinkSync('./asdhwbvjhsavd.pdf')  //removes original unfilled pdf
