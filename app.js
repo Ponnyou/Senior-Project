@@ -10,6 +10,7 @@ var bodyParser = require('body-parser')
 const app = express()
 const path = require('path')
 var b64 = ""
+var matchingKeyExists = false //flag
 
 
 app.use(bodyParser.urlencoded({ extended: false }))  //setup
@@ -108,10 +109,13 @@ async function run(b64, jsonData) {
         if (`${type}` == "PDFTextField") {  //fill in Text fields
             if (key.includes(`${name}`)) {
                 field.setText(jsonData[name])
+                matchingKeyExists = true
+
             }
         } else if (`${type}` == "PDFDropdown") {  //select from dropdown
             if (key.includes(`${name}`)) {
                 field.select(jsonData[name])
+                matchingKeyExists = true
             }
         } else if (`${type}` == "PDFCheckBox") {  //select checkboxes
             if (key.includes(`${name}`)) {
@@ -120,13 +124,19 @@ async function run(b64, jsonData) {
                 } else {
                     field.uncheck()
                 }
+                matchingKeyExists = true
             }
         } else if (`${type}` == "PDFRadioGroup") {  //select radio button (button with only 1 allowed E.X. test question with answers A, B, C, D)
             if (key.includes(`${name}`)) {
                 field.select(jsonData[name])
+                matchingKeyExists = true
             }
         }
     })
+    if (matchingKeyExists == false) { //if never updated any fields a matching key doesn't exist
+        console.log('No matching keys between JSON and PDF! Either PDF is not fillable or JSON and PDF are not properly formatted!')
+    }
+    matchingKeyExists = false //reset flag
     form_pdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
     fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', await pdf.save());  //save the pdf with a gibberish name to not overwrite any of the user's pdfs
     const filled_pdf = fs.readFileSync('./asdhwbvjhsavd_filled.pdf')
