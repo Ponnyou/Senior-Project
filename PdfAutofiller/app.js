@@ -207,7 +207,7 @@ async function run(b64, jsonData) {
         })
     }
     console.log("You your json and PDF have",matches,"matching fields")
-    form_pdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
+    formPdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
     fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', await pdf.save());  //save the pdf with a gibberish name to not overwrite any of the user's pdfs
     const filled_pdf = fs.readFileSync('./asdhwbvjhsavd_filled.pdf')
     fs.unlinkSync('./asdhwbvjhsavd.pdf')  //removes original unfilled pdf
