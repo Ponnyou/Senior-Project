@@ -3,6 +3,7 @@ const { PDFDocument } = require('pdf-lib'); // imports
 const fs = require('fs');
 const multer = require('multer')
 const upload = multer()
+const open = require('open')
 const base64 = require('base64topdf');
 const express = require('express')
 const { v4: uuidv4 } = require('uuid');
@@ -145,5 +146,6 @@ async function run(b64, jsonData) {
 }
 
 app.listen(port, () => {
+    open("http://localhost:1337")
     console.log(`listening on port ${port}`)  //message to show program is running
 })
