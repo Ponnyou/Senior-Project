@@ -2,14 +2,18 @@
 const { PDFDocument } = require('pdf-lib'); // imports
 const fs = require('fs');
 const multer = require('multer')
+const open = require('open')
 const upload = multer()
 const base64 = require('base64topdf');
 const express = require('express')
 const { v4: uuidv4, validate } = require('uuid');
 var bodyParser = require('body-parser')
 const app = express()
-const path = require('path')
+const path = require('path');
+const { MongoClient } = require('mongodb');
 var b64 = ""
+const mongoose = require('mongoose')
+//const GridFsStorage = require('multer-storage-gridfs')
 
 
 app.use(bodyParser.urlencoded({ extended: false }))  //setup
@@ -76,11 +80,15 @@ app.get("/retrieve", (req, res) => { //retrieve the keys of uploaded pdfs
     res.sendFile(__dirname + '/retrieve.html')
 })
 
+app.get("/register", (req, res) => { //retrieve the keys of uploaded pdfs
+    res.sendFile(__dirname + '/register.html')
+})
+
 app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
     const filename = req.files[0].originalname
-  
+
     if (req.files[0].size == 0) {
         console.log("This PDF file is empty")
     }
@@ -102,20 +110,22 @@ app.post("/upload", (req, res) => {
             })
         }
         console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
+        databaseSendRpdf(filename, key, req.files[0].buffer) //Send to mongoDB
     }
 })
 
 app.post("/access", (req, res) => {
-    const pdfID = req.body.PDFID
+    var data = databaseRetrieveRpdf(req.body.PDFID)
     const verify = validateJSON(req.files[0].buffer.toString())
 
+    //This needs to be modified to work with the pdf data retrieved from mongodb (work in progess)
     if (verify) {
         const sentJson = JSON.parse(req.files[0].buffer.toString())
         const storageFile = fs.readFileSync('PDF_storage.json')
         const parsedFile = JSON.parse(storageFile)
         const jsonKeys = Object.keys(parsedFile)
-        if (jsonKeys.includes(`${pdfID}`)) {
-            encodePDF(parsedFile[pdfID], sentJson)
+        if (jsonKeys.includes(pdfID)) { // (req.body.PDFID) maybe
+            encodePDF(parsedFile[pdfID], sentJson) // unsure what to put here
                 .then(PDF => {
                     console.log(PDF)
                     res.contentType("application/pdf")
@@ -142,6 +152,89 @@ app.post("/retrieve", (req, res) => {
         console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
     }
 })
+
+app.post("/register", (req, res) => {
+    res.sendFile(path.join(__dirname + '/register.html'))
+    const userID = uuidv4().substring(0,5)
+    const fName = req.body.fName
+    const lName = req.body.lName
+    const email = req.body.email
+    databaseSendUser(fName, lName, email, userID)
+    console.log(`Your userID is ${userID}! Make sure to write it down!`)
+})
+
+async function databaseSendUser(fName, lName, email, userID) {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+
+    try {
+        await client.connect()
+        const collection = client.db('Autofiller_Database').collection('User')
+        const newData = {First_name: fName, Last_name: lName, email: email, userID: userID}
+        await collection.insertOne(newData)
+        //await createListing(clinet.db.collection('User'), { First_name: fName, Last_name: lName, email: email, userID: userID })
+    } catch (e) {
+        console.log(e)
+        return
+    }
+
+    finally {
+        await client.close()
+    }
+    return
+}
+
+async function databaseRetrieveRpdf(pdfKey) {
+    //Gets the data from the matching pdfID
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+    const pdfID = pdfKey
+
+    try {
+        await client.connect()
+        console.log(pdfID)
+        const result = await client.db("Autofiller_Database").collection("Raw_PDF")
+
+        const query = { ID: pdfID }
+        await result.findOne(query)
+        console.log(result)
+        await client.close()
+    } catch (e) {
+        throw err
+    }
+    return result
+}
+
+async function databaseSendRpdf(pdf, pdfKey, buffer) {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+
+    try {
+        await client.connect()
+        await createListing(client, { Id: pdfKey, Filename: pdf, Contents: buffer })
+    } catch (e) {
+        console.log(e)
+        return
+    }
+
+    finally {
+        await client.close()
+    }
+    return
+}
+
+async function createListing(client, newListing) {
+    const result = await client.db("Autofiller_Database").collection("Raw_PDF").insertOne(newListing)
+
+    console.log(`New listing created with the following id: ${result.insertedId}`)
+}
+
+async function listDatabases(client) {
+    var databasesList = await client.db().admin().listDatabases()
+    console.log("Databases:")
+
+    databasesList.databases.forEach(db => console.log(` - ${db.name}`))
+}
 
 async function encodePDF(pdfPath, jsonData) {
     let encodedPDF = await base64.base64Encode(`${pdfPath}`)
@@ -230,5 +323,6 @@ async function run(b64, jsonData) {
 }
 
 app.listen(port, () => {
+    open("http://localhost:1337")
     console.log(`listening on port ${port}`)  //message to show program is running
 })
