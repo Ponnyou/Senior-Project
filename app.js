@@ -173,6 +173,7 @@ async function databaseSendUser(fName, lName, email, userID) {
         const newData = {First_name: fName, Last_name: lName, email: email, userID: userID}
         await collection.insertOne(newData)
         //await createListing(clinet.db.collection('User'), { First_name: fName, Last_name: lName, email: email, userID: userID })
+        findUID()
     } catch (e) {
         console.log(e)
         return
@@ -240,6 +241,29 @@ async function encodePDF(pdfPath, jsonData) {
     let encodedPDF = await base64.base64Encode(`${pdfPath}`)
     let test = await run(encodedPDF, jsonData)
     return test
+}
+
+async function findUID() {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+    try {
+        const database = client.db("Autofiller_Database")
+        const uid = database.collection("User")
+
+        const query = { userID: "03fd8" }
+        const id = await uid.findOne(query)
+        if (id != null) {
+            return false
+        } else {
+            console.log(id)
+            return true
+        }
+    } catch (e) {
+        console.log(e)
+        return
+    } finally {
+        await client.close()
+    }
 }
 
 function validateJSON(data) {
