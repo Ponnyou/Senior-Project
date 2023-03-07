@@ -87,6 +87,12 @@ app.get("/register", (req, res) => { //retrieve the keys of uploaded pdfs
 app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
+    const userID = req.body.UID
+    if (!findUID(userID)) {
+        console.log("USERID INVALID")
+        res.sendFile(path.join(__dirname + '/access.html'))
+    }
+
     const filename = req.files[0].originalname
 
     if (req.files[0].size == 0) {
@@ -116,7 +122,14 @@ app.post("/upload", (req, res) => {
 
 app.post("/access", (req, res) => {
     var data = databaseRetrieveRpdf(req.body.PDFID)
-    const verify = validateJSON(req.files[0].buffer.toString())
+    const userID = req.body.UID
+
+    if (!findUID(userID)) {
+        console.log("USERID INVALID")
+        res.sendFile(path.join(__dirname + '/access.html'))
+    }
+
+    const verify = validateJSON(req.files[0].buffer.toString()) //PLEASE CHANGE VAR NAME
 
     //This needs to be modified to work with the pdf data retrieved from mongodb (work in progess)
     if (verify) {
@@ -144,6 +157,11 @@ app.post("/access", (req, res) => {
 app.post("/retrieve", (req, res) => {
     const checkFile = req.files[0].originalname
     const filePath = path.join(__dirname + "\\" + checkFile)
+    const userID = req.body.UID
+    if (!findUID(userID)) {
+        console.log("USERID INVALID")
+        res.sendFile(path.join(__dirname + '/access.html'))
+    }
     try {
         const bufferJson = fs.readFileSync('PDF_storage.json')
         const parseData = JSON.parse(bufferData)
@@ -236,13 +254,36 @@ async function listDatabases(client) {
     databasesList.databases.forEach(db => console.log(` - ${db.name}`))
 }
 
+async function findUID(userID) {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+    try {
+        const database = client.db("Autofiller_Database")
+        const uid = database.collection("User")
+
+        const query = { userID: `${userID}` }
+        const id = await uid.findOne(query)
+        if (id == null) {
+            return false
+        } else {
+            console.log(id)
+            return true
+        }
+    } catch (e) {
+        console.log(e)
+        return
+    } finally {
+        await client.close()
+    }
+}
+
 async function encodePDF(pdfPath, jsonData) {
     let encodedPDF = await base64.base64Encode(`${pdfPath}`)
     let test = await run(encodedPDF, jsonData)
     return test
 }
 
-function validateJSON(data) {
+async function validateJSON(data) {
     try {
         var jsonData = JSON.parse(data)  //Checks if its JSON data
         return true
@@ -252,7 +293,7 @@ function validateJSON(data) {
     }
 }
 
-function verify(fields, key, b64) {
+async function verify(fields, key, b64) {
     var valid = 0
     if (key.length == 0) {
         console.log("Your json file has no values in it")

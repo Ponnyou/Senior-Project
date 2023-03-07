@@ -9,9 +9,11 @@
           <p>This page takes a pdf and stores it for later use.</p>
           <p>To autofill a PDF without storing it, send a post request to the main page</p>
           <form action="/upload" method="post" enctype="multipart/form-data">
-               <label for="fname">Insert the PDF you want to upload:</label>
-               <input type="file" id="PDFID" name="PDFID" accept=".pdf"><br><br>
-               <input type="submit" value="submit" id="submit">
+              <label for="fname">Insert the PDF you want to upload:</label>
+              <input type="file" id="PDFID" name="PDFID" accept=".pdf"><br><br>
+              <label for="UID">Type your user ID here: </label>
+              <input type="text" id="UID" name="User ID"><br><br>
+              <input type="submit" value="submit" id="submit">
           </form>
           <a href="http://localhost:1337/">Click here to return to the main page.</a>
           <p></p>
