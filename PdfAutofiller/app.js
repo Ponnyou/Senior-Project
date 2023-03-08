@@ -158,7 +158,7 @@ app.post("/access", (req, res) => {
 app.post("/retrieve", (req, res) => {
     const checkFile = req.files[0].originalname
     const filePath = path.join(__dirname + "\\" + checkFile)
-    const userID = req.body.UID
+    const userID = req.body.UserID
     if (!findUID(userID)) {
         console.log("USERID INVALID")
         res.sendFile(path.join(__dirname + '/access.html'))
