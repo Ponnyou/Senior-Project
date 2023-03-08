@@ -80,14 +80,15 @@ app.get("/retrieve", (req, res) => { //retrieve the keys of uploaded pdfs
     res.sendFile(__dirname + '/retrieve.html')
 })
 
-app.get("/register", (req, res) => { //retrieve the keys of uploaded pdfs
+app.get("/register", (req, res) => { //register account
     res.sendFile(__dirname + '/register.html')
 })
 
 app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
-    const userID = req.body.UID
+    const userID = req.body.UserID
+    console.log(userID)
     if (!findUID(userID)) {
         console.log("USERID INVALID")
         res.sendFile(path.join(__dirname + '/access.html'))
@@ -116,7 +117,7 @@ app.post("/upload", (req, res) => {
             })
         }
         console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
-        databaseSendRpdf(filename, key, req.files[0].buffer) //Send to mongoDB
+        databaseSendRpdf(filename, key, userID, req.files[0].buffer) //Send to mongoDB
     }
 })
 
@@ -173,7 +174,7 @@ app.post("/retrieve", (req, res) => {
 
 app.post("/register", (req, res) => {
     res.sendFile(path.join(__dirname + '/register.html'))
-    const userID = uuidv4().substring(0,5)
+    const userID = uuidv4().substring(0, 5)
     const fName = req.body.fName
     const lName = req.body.lName
     const email = req.body.email
@@ -188,7 +189,7 @@ async function databaseSendUser(fName, lName, email, userID) {
     try {
         await client.connect()
         const collection = client.db('Autofiller_Database').collection('User')
-        const newData = {First_name: fName, Last_name: lName, email: email, userID: userID}
+        const newData = { First_name: fName, Last_name: lName, email: email, userID: userID }
         await collection.insertOne(newData)
         //await createListing(clinet.db.collection('User'), { First_name: fName, Last_name: lName, email: email, userID: userID })
     } catch (e) {
@@ -223,13 +224,13 @@ async function databaseRetrieveRpdf(pdfKey) {
     return result
 }
 
-async function databaseSendRpdf(pdf, pdfKey, buffer) {
+async function databaseSendRpdf(pdf, pdfKey, userID, buffer) {
     const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
     const client = new MongoClient(uri)
 
     try {
         await client.connect()
-        await createListing(client, { Id: pdfKey, Filename: pdf, Contents: buffer })
+        await createListing(client, { Id: pdfKey, Filename: pdf, userID: userID, Contents: buffer })
     } catch (e) {
         console.log(e)
         return
