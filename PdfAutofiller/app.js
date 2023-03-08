@@ -88,7 +88,6 @@ app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
     const userID = req.body.UserID
-    console.log(userID)
     if (!findUID(userID)) {
         console.log("USERID INVALID")
         res.sendFile(path.join(__dirname + '/access.html'))
@@ -164,8 +163,9 @@ app.post("/retrieve", (req, res) => {
         res.sendFile(path.join(__dirname + '/access.html'))
     }
     try {
-        const bufferJson = fs.readFileSync('PDF_storage.json')
+        const bufferData = fs.readFileSync('PDF_storage.json')
         const parseData = JSON.parse(bufferData)
+        console.log(parseData) //temporary implementation, currently sends all PDF IDs asscoiated with the ID
     }
     catch (e) {
         console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
