@@ -242,8 +242,34 @@ async function databaseSendRpdf(pdf, pdfKey, userID, buffer) {
     return
 }
 
+async function databaseSendFpdf(pdf, rpdfKey, fpdfKey, userID, jsonName) {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+    var uploadTime = new Date().toLocaleString();
+    try {
+        await client.connect()
+        await createListingFilled(client, {
+            rawID: rpdfKey, filledID: fpdfKey, JSONName: jsonName, Filename: pdf, userID: userID, uploadTime: uploadTime
+        })
+    } catch (e) {
+        console.log(e)
+        return
+    }
+
+    finally {
+        await client.close()
+    }
+    return
+}
+
 async function createListing(client, newListing) {
     const result = await client.db("Autofiller_Database").collection("Raw_PDF").insertOne(newListing)
+
+    console.log(`New listing created with the following id: ${result.insertedId}`)
+}
+
+async function createListingFilled(client, newListing) {
+    const result = await client.db("Autofiller_Database").collection("Filled_PDF").insertOne(newListing)
 
     console.log(`New listing created with the following id: ${result.insertedId}`)
 }
