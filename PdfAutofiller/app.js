@@ -165,7 +165,7 @@ app.post("/retrieve", (req, res) => {
     try {
         const bufferData = fs.readFileSync('PDF_storage.json')
         const parseData = JSON.parse(bufferData)
-        console.log(parseData) //temporary implementation, currently sends all PDF IDs asscoiated with the ID
+        console.log(parseData) //temporary implementation, currently sends all PDF IDs in PDF_storage.json
     }
     catch (e) {
         console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
@@ -267,7 +267,7 @@ async function findUID(userID) {
         if (id == null) {
             return false
         } else {
-            console.log(id)
+            //console.log(id) //this is displaying even in cases where we don't need it, rewrite or remove?
             return true
         }
     } catch (e) {
