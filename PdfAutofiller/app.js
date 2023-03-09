@@ -13,7 +13,6 @@ const path = require('path');
 const { MongoClient } = require('mongodb');
 var b64 = ""
 const mongoose = require('mongoose')
-const { generateApiKey } = require('generate-api-key')
 //const GridFsStorage = require('multer-storage-gridfs')
 
 
@@ -81,113 +80,54 @@ app.get("/retrieve", (req, res) => { //retrieve the keys of uploaded pdfs
     res.sendFile(__dirname + '/retrieve.html')
 })
 
-app.get("/register", (req, res) => { //register account
+app.get("/register", (req, res) => { //retrieve the keys of uploaded pdfs
     res.sendFile(__dirname + '/register.html')
 })
 
 app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
-    const userID = req.body.UserID
-    findUID(userID)
-        .then(uploaded => {
-            console.log(`${uploaded}`)
-            if (uploaded == false) {
-                console.log("USERID INVALID")
-                res.sendFile(path.join(__dirname + '/upload.html'))
-            }
-            else {
-                const filename = req.files[0].originalname
+    const filename = req.files[0].originalname
 
-                if (req.files[0].size == 0) {
-                    console.log("This PDF file is empty")
+    if (req.files[0].size == 0) {
+        console.log("This PDF file is empty")
+    }
+    else {
+        fs.writeFileSync('./' + filename, req.files[0].buffer)
+        const filepath = path.join(__dirname + "\\" + filename)//Access file path
+        try {  //Store IDs in a JSON
+            const bufferData = fs.readFileSync('PDF_storage.json')
+            const parseData = JSON.parse(bufferData)
+            parseData[key] = filepath
+            const newData = JSON.stringify(parseData)
+            fs.writeFileSync('PDF_storage.json', newData)
+        } catch (e) {  //error
+            var newJson = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
+            fs.appendFile('PDF_storage.json', newJson, err => {
+                if (err) {
+                    throw err
                 }
-                else {
-                    fs.writeFileSync('./' + filename, req.files[0].buffer)
-                    const filepath = path.join(__dirname + "\\" + filename)//Access file path
-                    try {  //Store IDs in a JSON
-                        const bufferData = fs.readFileSync('PDF_storage.json')
-                        const parseData = JSON.parse(bufferData)
-                        parseData[key] = filepath
-                        const newData = JSON.stringify(parseData)
-                        fs.writeFileSync('PDF_storage.json', newData)
-                    } catch (e) {  //error
-                        var newJson = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
-                        fs.appendFile('PDF_storage.json', newJson, err => {
-                            if (err) {
-                                throw err
-                            }
-                        })
-                    }
-                    console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
-                    databaseSendRpdf(filename, key, userID, req.files[0].buffer) //Send to mongoDB
-                }
-            }
-        })
+            })
+        }
+        console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
+        databaseSendRpdf(filename, key, filepath) //Send to mongoDB
+    }
 })
 
 app.post("/access", (req, res) => {
-    var data = databaseRetrieveRpdf(req.body.PDFID)
-    const userID = req.body.UID
-
-    findUID(userID)
-        .then(uploaded => {
-            console.log(`${uploaded}`)
-            if (uploaded == false) {
-                console.log("USERID INVALID")
-                res.sendFile(path.join(__dirname + '/upload.html'))
-            }
-            else {
-                const verify = validateJSON(req.files[0].buffer.toString()) //PLEASE CHANGE VAR NAME
-
-                //This needs to be modified to work with the pdf data retrieved from mongodb (work in progess)
-                if (verify) {
-                    const sentJson = JSON.parse(req.files[0].buffer.toString())
-                    const storageFile = fs.readFileSync('PDF_storage.json')
-                    const parsedFile = JSON.parse(storageFile)
-                    const jsonKeys = Object.keys(parsedFile)
-                    if (jsonKeys.includes(pdfID)) { // (req.body.PDFID) maybe
-                        encodePDF(parsedFile[pdfID], sentJson) // unsure what to put here
-                            .then(PDF => {
-                                console.log(PDF)
-                                res.contentType("application/pdf")
-                                res.send(PDF)
-                                fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
-                            })
-                    }
-                }
-                else {
-                    console.log("The JSON file submitted is empty")
-                    res.sendFile(path.join(__dirname + '/access.html'))
-                }
-            }
-
-        })
-    //res.sendFile(path.join(__dirname + '/access.html'))
+    var data = databaseRetrieveRpdf(req.body.PDFID, req.files[0], res)
 })
 
-app.post("/retrieve", (req, res) => {  //REMINDER THIS POST IS UNFINISHED!!!!!!!!
+app.post("/retrieve", (req, res) => {
     const checkFile = req.files[0].originalname
     const filePath = path.join(__dirname + "\\" + checkFile)
-    const userID = req.body.UserID
-    findUID(userID)
-        .then(uploaded => {
-            console.log(`${uploaded}`)
-            if (uploaded == false) {
-                console.log("USERID INVALID")
-                res.sendFile(path.join(__dirname + '/upload.html'))
-            }
-            else {
-                try {
-                    const bufferData = fs.readFileSync('PDF_storage.json')
-                    const parseData = JSON.parse(bufferData)
-                    console.log(parseData) //temporary implementation, currently sends all PDF IDs in PDF_storage.json
-                }
-                catch (e) {
-                    console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
-                }
-            }
-        })
+    try {
+        const bufferJson = fs.readFileSync('PDF_storage.json')
+        const parseData = JSON.parse(bufferData)
+    }
+    catch (e) {
+        console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
+    }
 })
 
 app.post("/register", (req, res) => {
@@ -197,10 +137,7 @@ app.post("/register", (req, res) => {
     const lName = req.body.lName
     const email = req.body.email
     databaseSendUser(fName, lName, email, userID)
-    const api = generateApiKey({ method: 'uuidv4', dashes: false })
     console.log(`Your userID is ${userID}! Make sure to write it down!`)
-    console.log(`Your API key is ${api}! Make sure to write it down!`)
-    databaseSendAPI(userID, api)
 })
 
 async function databaseSendUser(fName, lName, email, userID) {
@@ -213,6 +150,7 @@ async function databaseSendUser(fName, lName, email, userID) {
         const newData = { First_name: fName, Last_name: lName, email: email, userID: userID }
         await collection.insertOne(newData)
         //await createListing(clinet.db.collection('User'), { First_name: fName, Last_name: lName, email: email, userID: userID })
+        findUID()
     } catch (e) {
         console.log(e)
         return
@@ -224,72 +162,56 @@ async function databaseSendUser(fName, lName, email, userID) {
     return
 }
 
-async function databaseSendAPI(userID, api) {
-    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
-    const client = new MongoClient(uri)
-
-    try {
-        const collection = client.db('Autofiller_Database').collection('API_Key')
-        const newData = { User_ID: userID, API_Key: api }
-        await collection.insertOne(newData)
-    } catch (e) {
-        console.log(e)
-        return
-    }
-
-    finally {
-        await client.close()
-    }
-}
-
-async function databaseRetrieveRpdf(pdfKey) {
+async function databaseRetrieveRpdf(pdfKey, json, res) {
     //Gets the data from the matching pdfID
-    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net"
     const client = new MongoClient(uri)
     const pdfID = pdfKey
 
     try {
-        await client.connect()
-        console.log(pdfID)
         const result = await client.db("Autofiller_Database").collection("Raw_PDF")
+        const query = { Id: pdfID }
+        const file = await result.findOne(query)
+        const isJson = validateJSON(json.buffer.toString())
 
-        const query = { ID: pdfID }
-        await result.findOne(query)
-        console.log(result)
-        await client.close()
-    } catch (e) {
-        throw err
-    }
-    return result
-}
+        if (isJson) {
+            const sentJson = JSON.parse(json.buffer.toString())
+            run(file.Contents, sentJson)
 
-async function databaseSendRpdf(pdf, pdfKey, userID, buffer) {
-    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
-    const client = new MongoClient(uri)
-
-    try {
-        await client.connect()
-        await createListing(client, { Id: pdfKey, Filename: pdf, userID: userID, Contents: buffer })
+            encodePDF(file.FilePath, sentJson)
+                .then(PDF => {
+                    console.log(PDF)
+                    res.contentType("application/pdf")
+                    res.send(PDF)
+                    fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+                })
+        }
+        else {
+            console.log("The JSON file submitted is empty")
+            res.sendFile(path.join(__dirname + '/access.html'))
+        }
     } catch (e) {
         console.log(e)
-        return
     }
 
     finally {
         await client.close()
     }
-    return
 }
 
-async function databaseSendFpdf(pdf, rpdfKey, fpdfKey, userID, jsonName) {
+async function databaseSendRpdf(pdf, pdfKey, path) {
     const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
     const client = new MongoClient(uri)
-    var uploadTime = new Date().toLocaleString();
+
     try {
         await client.connect()
-        await createListingFilled(client, {
-            rawID: rpdfKey, filledID: fpdfKey, JSONName: jsonName, Filename: pdf, userID: userID, uploadTime: uploadTime
-        })
+
+        const result = await client.db("Autofiller_Database").collection("Raw_PDF")
+
+        //await client.connect()
+        var obj = { Id: pdfKey, Filename: pdf, FilePath: path }
+        console.log(obj)
+        await result.insertOne(obj)
     } catch (e) {
         console.log(e)
         return
@@ -307,12 +229,6 @@ async function createListing(client, newListing) {
     console.log(`New listing created with the following id: ${result.insertedId}`)
 }
 
-async function createListingFilled(client, newListing) {
-    const result = await client.db("Autofiller_Database").collection("Filled_PDF").insertOne(newListing)
-
-    console.log(`New listing created with the following id: ${result.insertedId}`)
-}
-
 async function listDatabases(client) {
     var databasesList = await client.db().admin().listDatabases()
     console.log("Databases:")
@@ -320,20 +236,25 @@ async function listDatabases(client) {
     databasesList.databases.forEach(db => console.log(` - ${db.name}`))
 }
 
-async function findUID(userID) {
+async function encodePDF(pdfPath, jsonData) {
+    let encodedPDF = await base64.base64Encode(`${pdfPath}`)
+    let test = await run(encodedPDF, jsonData)
+    return test
+}
+
+async function findUID() {
     const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
     const client = new MongoClient(uri)
     try {
         const database = client.db("Autofiller_Database")
         const uid = database.collection("User")
 
-        const query = { userID: `${userID}` }
+        const query = { userID: "03fd8" }
         const id = await uid.findOne(query)
-        console.log(`${id}`)
-        if (id == null) {
+        if (id != null) {
             return false
         } else {
-            //console.log(`${id}`) //this is displaying even in cases where we don't need it, rewrite or remove?
+            console.log(id)
             return true
         }
     } catch (e) {
@@ -344,13 +265,7 @@ async function findUID(userID) {
     }
 }
 
-async function encodePDF(pdfPath, jsonData) {
-    let encodedPDF = await base64.base64Encode(`${pdfPath}`)
-    let test = await run(encodedPDF, jsonData)
-    return test
-}
-
-async function validateJSON(data) {
+function validateJSON(data) {
     try {
         var jsonData = JSON.parse(data)  //Checks if its JSON data
         return true
@@ -360,7 +275,7 @@ async function validateJSON(data) {
     }
 }
 
-async function verify(fields, key, b64) {
+function verify(fields, key, b64) {
     var valid = 0
     if (key.length == 0) {
         console.log("Your json file has no values in it")
