@@ -13,7 +13,7 @@ const path = require('path');
 const { MongoClient } = require('mongodb');
 var b64 = ""
 const mongoose = require('mongoose')
-const generateAPIKey = require('generate-api-key')
+import generateApiKey from 'generate-api-key'
 //const GridFsStorage = require('multer-storage-gridfs')
 
 
@@ -180,7 +180,7 @@ app.post("/register", (req, res) => {
     const lName = req.body.lName
     const email = req.body.email
     databaseSendUser(fName, lName, email, userID)
-    const api = generateAPIKey({ method: 'uuidv4', dashes: false })
+    const api = generateApiKey({ method: 'uuidv4', dashes: false })
     console.log(`Your userID is ${userID}! Make sure to write it down!`)
     console.log(`Your API key is ${api}! Make sure to write it down!`)
 })
