@@ -91,7 +91,7 @@ app.post("/upload", (req, res) => {
     const userID = req.body.UserID
     findUID(userID)
         .then(uploaded => {
-            console.log(`${test}`)
+            console.log(`${uploaded}`)
             if (uploaded == false) {
                 console.log("USERID INVALID")
                 res.sendFile(path.join(__dirname + '/upload.html'))
@@ -130,52 +130,64 @@ app.post("/access", (req, res) => {
     var data = databaseRetrieveRpdf(req.body.PDFID)
     const userID = req.body.UID
 
-    if (!findUID(userID)) {
-        console.log("USERID INVALID")
-        res.sendFile(path.join(__dirname + '/access.html'))
-    }
+    findUID(userID)
+        .then(uploaded => {
+            console.log(`${uploaded}`)
+            if (uploaded == false) {
+                console.log("USERID INVALID")
+                res.sendFile(path.join(__dirname + '/upload.html'))
+            }
+            else {
+                const verify = validateJSON(req.files[0].buffer.toString()) //PLEASE CHANGE VAR NAME
 
-    const verify = validateJSON(req.files[0].buffer.toString()) //PLEASE CHANGE VAR NAME
+                //This needs to be modified to work with the pdf data retrieved from mongodb (work in progess)
+                if (verify) {
+                    const sentJson = JSON.parse(req.files[0].buffer.toString())
+                    const storageFile = fs.readFileSync('PDF_storage.json')
+                    const parsedFile = JSON.parse(storageFile)
+                    const jsonKeys = Object.keys(parsedFile)
+                    if (jsonKeys.includes(pdfID)) { // (req.body.PDFID) maybe
+                        encodePDF(parsedFile[pdfID], sentJson) // unsure what to put here
+                            .then(PDF => {
+                                console.log(PDF)
+                                res.contentType("application/pdf")
+                                res.send(PDF)
+                                fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+                            })
+                    }
+                }
+                else {
+                    console.log("The JSON file submitted is empty")
+                    res.sendFile(path.join(__dirname + '/access.html'))
+                }
+            }
 
-    //This needs to be modified to work with the pdf data retrieved from mongodb (work in progess)
-    if (verify) {
-        const sentJson = JSON.parse(req.files[0].buffer.toString())
-        const storageFile = fs.readFileSync('PDF_storage.json')
-        const parsedFile = JSON.parse(storageFile)
-        const jsonKeys = Object.keys(parsedFile)
-        if (jsonKeys.includes(pdfID)) { // (req.body.PDFID) maybe
-            encodePDF(parsedFile[pdfID], sentJson) // unsure what to put here
-                .then(PDF => {
-                    console.log(PDF)
-                    res.contentType("application/pdf")
-                    res.send(PDF)
-                    fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
-                })
-        }
-    }
-    else {
-        console.log("The JSON file submitted is empty")
-        res.sendFile(path.join(__dirname + '/access.html'))
-    }
+        })
     //res.sendFile(path.join(__dirname + '/access.html'))
 })
 
-app.post("/retrieve", (req, res) => {
+app.post("/retrieve", (req, res) => {  //REMINDER THIS POST IS UNFINISHED!!!!!!!!
     const checkFile = req.files[0].originalname
     const filePath = path.join(__dirname + "\\" + checkFile)
     const userID = req.body.UserID
-    if (!findUID(userID)) {
-        console.log("USERID INVALID")
-        res.sendFile(path.join(__dirname + '/access.html'))
-    }
-    try {
-        const bufferData = fs.readFileSync('PDF_storage.json')
-        const parseData = JSON.parse(bufferData)
-        console.log(parseData) //temporary implementation, currently sends all PDF IDs in PDF_storage.json
-    }
-    catch (e) {
-        console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
-    }
+    findUID(userID)
+        .then(uploaded => {
+            console.log(`${uploaded}`)
+            if (uploaded == false) {
+                console.log("USERID INVALID")
+                res.sendFile(path.join(__dirname + '/upload.html'))
+            }
+            else {
+                try {
+                    const bufferData = fs.readFileSync('PDF_storage.json')
+                    const parseData = JSON.parse(bufferData)
+                    console.log(parseData) //temporary implementation, currently sends all PDF IDs in PDF_storage.json
+                }
+                catch (e) {
+                    console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
+                }
+            }
+        })
 })
 
 app.post("/register", (req, res) => {
