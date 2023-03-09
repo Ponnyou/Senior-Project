@@ -276,7 +276,9 @@ async function merge(pdfID, json, userID, res) {
                 })
             const fpdfID = uuidv4().substring(0, 6) //ID for filled PDF
             console.log(`Filled PDF's key is ${fpdfID}! Don't forget it!`)
-            databaseSendFpdf(file.Filename, pdfID, fpdfID, userID, json.originalname)
+            var uploadTime = new Date().toLocaleString();
+            databaseSendFpdf(pdfID, fpdfID, userID, uploadTime, file.FilePath)
+            databaseSendData(pdfID, json.originalname, uploadTime)
         }
         catch (e) {
             console.log(e)
@@ -309,14 +311,32 @@ async function databaseSendRpdf(pdf, pdfKey, userID, path) {
     return
 }
 
-async function databaseSendFpdf(pdfname, rpdfKey, fpdfKey, userID, jsonName) {
+async function databaseSendFpdf(rpdfKey, fpdfKey, userID, uploadTime, FilePath) {
     const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
     const client = new MongoClient(uri)
-    var uploadTime = new Date().toLocaleString();
     try {
         await client.connect()
         await createListingFilled(client, {
-            rawID: rpdfKey, filledID: fpdfKey, JSONName: jsonName, Filename: pdfname, userID: userID, uploadTime: uploadTime
+            rawID: rpdfKey, filledID: fpdfKey, userID: userID, uploadTime: uploadTime, FilePath: FilePath
+        })
+    } catch (e) {
+        console.log(e)
+        return
+    }
+
+    finally {
+        await client.close()
+    }
+    return
+}
+
+async function databaseSendData(rpdfKey, JSON, uploadTime) {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+    try {
+        await client.connect()
+        await createListingData(client, {
+            PDFID: rpdfKey, JSON: JSON, uploadTime: uploadTime
         })
     } catch (e) {
         console.log(e)
@@ -337,6 +357,12 @@ async function createListing(client, newListing) {
 
 async function createListingFilled(client, newListing) {
     const result = await client.db("Autofiller_Database").collection("Filled_PDF").insertOne(newListing)
+
+    console.log(`New listing created with the following id: ${result.insertedId}`)
+}
+
+async function createListingData(client, newListing) {
+    const result = await client.db("Autofiller_Database").collection("Data").insertOne(newListing)
 
     console.log(`New listing created with the following id: ${result.insertedId}`)
 }
