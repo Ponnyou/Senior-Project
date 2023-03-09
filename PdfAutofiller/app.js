@@ -188,6 +188,7 @@ app.post("/register", (req, res) => {
     const api = generateApiKey({ method: 'uuidv4', dashes: false })
     console.log(`Your userID is ${userID}! Make sure to write it down!`)
     console.log(`Your API key is ${api}! Make sure to write it down!`)
+    databaseSendAPI(userID, api)
 })
 
 async function databaseSendUser(fName, lName, email, userID) {
@@ -209,6 +210,24 @@ async function databaseSendUser(fName, lName, email, userID) {
         await client.close()
     }
     return
+}
+
+async function databaseSendAPI(userID, api) {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+
+    try {
+        const collection = client.db('Autofiller_Database').collection('API_Key')
+        const newData = { User_ID: userID, API_Key: api }
+        await collection.insertOne(newData)
+    } catch (e) {
+        console.log(e)
+        return
+    }
+
+    finally {
+        await client.close()
+    }
 }
 
 async function databaseRetrieveRpdf(pdfKey) {
