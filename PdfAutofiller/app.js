@@ -13,7 +13,7 @@ const path = require('path');
 const { MongoClient } = require('mongodb');
 var b64 = ""
 const mongoose = require('mongoose')
-import generateApiKey from 'generate-api-key'
+const { generateApiKey } = require('generate-api-key')
 //const GridFsStorage = require('multer-storage-gridfs')
 
 
