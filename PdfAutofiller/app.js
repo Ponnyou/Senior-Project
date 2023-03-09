@@ -120,49 +120,16 @@ app.post("/upload", (req, res) => {
                         })
                     }
                     console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
-                    databaseSendRpdf(filename, key, userID, req.files[0].buffer) //Send to mongoDB
+                    databaseSendRpdf(filename, key, userID, filepath) //Send to mongoDB
                 }
             }
         })
 })
 
 app.post("/access", (req, res) => {
-    var data = databaseRetrieveRpdf(req.body.PDFID)
-    const userID = req.body.UID
-
-    findUID(userID)
-        .then(uploaded => {
-            console.log(`${uploaded}`)
-            if (uploaded == false) {
-                console.log("USERID INVALID")
-                res.sendFile(path.join(__dirname + '/upload.html'))
-            }
-            else {
-                const verify = validateJSON(req.files[0].buffer.toString()) //PLEASE CHANGE VAR NAME
-
-                //This needs to be modified to work with the pdf data retrieved from mongodb (work in progess)
-                if (verify) {
-                    const sentJson = JSON.parse(req.files[0].buffer.toString())
-                    const storageFile = fs.readFileSync('PDF_storage.json')
-                    const parsedFile = JSON.parse(storageFile)
-                    const jsonKeys = Object.keys(parsedFile)
-                    if (jsonKeys.includes(pdfID)) { // (req.body.PDFID) maybe
-                        encodePDF(parsedFile[pdfID], sentJson) // unsure what to put here
-                            .then(PDF => {
-                                console.log(PDF)
-                                res.contentType("application/pdf")
-                                res.send(PDF)
-                                fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
-                            })
-                    }
-                }
-                else {
-                    console.log("The JSON file submitted is empty")
-                    res.sendFile(path.join(__dirname + '/access.html'))
-                }
-            }
-
-        })
+    const userID = req.body.UserID
+    console.log(userID)
+    var data = databaseRetrieveRpdf(req.body.PDFID, req.files[0], userID, res)
     //res.sendFile(path.join(__dirname + '/access.html'))
 })
 
@@ -254,7 +221,7 @@ async function Retrieve(userID, filename) {
         const rpdf = database.collection("Raw_PDF")
 
         const query = { userID: `${userID}`, Filename: `${filename}` }
-        const options = { projection: {_id:0, Filename:0, userID:0, Contents:0}}
+        const options = { projection: { _id: 0, Filename: 0, userID: 0, Contents: 0 } }
         const id = rpdf.find(query, options)
         if (id == null) {
             console.log("No ID found...")
@@ -271,34 +238,66 @@ async function Retrieve(userID, filename) {
     }
 }
 
-async function databaseRetrieveRpdf(pdfKey) {
-    //Gets the data from the matching pdfID
-    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
-    const client = new MongoClient(uri)
-    const pdfID = pdfKey
-
-    try {
-        await client.connect()
-        console.log(pdfID)
-        const result = await client.db("Autofiller_Database").collection("Raw_PDF")
-
-        const query = { ID: pdfID }
-        await result.findOne(query)
-        console.log(result)
-        await client.close()
-    } catch (e) {
-        throw err
-    }
-    return result
+async function databaseRetrieveRpdf(pdfID, json, userID, res) {
+    //Verifies if the user ID exists then calls the merge function
+    findUID(userID)
+        .then(uploaded => {
+            console.log(`${uploaded}`)
+            if (uploaded == false) {
+                console.log("USERID INVALID")
+                res.sendFile(path.join(__dirname + '/upload.html'))
+            }
+            else {
+                merge(pdfID, json, userID, res)
+            }
+        })
 }
 
-async function databaseSendRpdf(pdf, pdfKey, userID, buffer) {
+async function merge(pdfID, json, userID, res) {
+    //Connects to the database
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net"
+    const client = new MongoClient(uri)
+    const result = await client.db("Autofiller_Database").collection("Raw_PDF")
+
+
+    const isJson = validateJSON(json.buffer.toString()) //Determines if Json exists
+    if (isJson) {
+        const sentJson = JSON.parse(json.buffer.toString())
+        try {
+            const query = { Id: pdfID } //Finds the databse entry with the pdf ID
+            const file = await result.findOne(query)
+
+            encodePDF(file.FilePath, sentJson) //The fields won't merge
+                .then(PDF => {
+                    console.log(PDF)
+                    res.contentType("application/pdf")
+                    res.send(PDF)
+                    fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+                })
+            const fpdfID = uuidv4().substring(0, 6) //ID for filled PDF
+            console.log(`Filled PDF's key is ${fpdfID}! Don't forget it!`)
+            databaseSendFpdf(file.Filename, pdfID, fpdfID, userID, json.originalname)
+        }
+        catch (e) {
+            console.log(e)
+        }
+        finally {
+            await client.close()
+        }
+    }
+    else {
+        console.log("The JSON file submitted is empty")
+        res.sendFile(path.join(__dirname + '/access.html'))
+    }
+}
+
+async function databaseSendRpdf(pdf, pdfKey, userID, path) {
     const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
     const client = new MongoClient(uri)
 
     try {
         await client.connect()
-        await createListing(client, { Id: pdfKey, Filename: pdf, userID: userID, Contents: buffer })
+        await createListing(client, { Id: pdfKey, Filename: pdf, userID: userID, FilePath: path })
     } catch (e) {
         console.log(e)
         return
@@ -310,14 +309,14 @@ async function databaseSendRpdf(pdf, pdfKey, userID, buffer) {
     return
 }
 
-async function databaseSendFpdf(pdf, rpdfKey, fpdfKey, userID, jsonName) {
+async function databaseSendFpdf(pdfname, rpdfKey, fpdfKey, userID, jsonName) {
     const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
     const client = new MongoClient(uri)
     var uploadTime = new Date().toLocaleString();
     try {
         await client.connect()
         await createListingFilled(client, {
-            rawID: rpdfKey, filledID: fpdfKey, JSONName: jsonName, Filename: pdf, userID: userID, uploadTime: uploadTime
+            rawID: rpdfKey, filledID: fpdfKey, JSONName: jsonName, Filename: pdfname, userID: userID, uploadTime: uploadTime
         })
     } catch (e) {
         console.log(e)
@@ -388,7 +387,7 @@ async function validateJSON(data) {
     }
 }
 
-async function verify(fields, key, b64) {
+function verify(fields, key, b64) {
     var valid = 0
     if (key.length == 0) {
         console.log("Your json file has no values in it")
@@ -448,7 +447,7 @@ async function run(b64, jsonData) {
             }
         })
     }
-    console.log("You your json and PDF have", matches, "matching fields")
+    console.log("Your JSON and PDF have", matches, "matching fields")
     formPdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
     fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', await pdf.save());  //save the pdf with a gibberish name to not overwrite any of the user's pdfs
     const filled_pdf = fs.readFileSync('./asdhwbvjhsavd_filled.pdf')
