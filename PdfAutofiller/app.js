@@ -90,39 +90,40 @@ app.post("/upload", (req, res) => {
     const key = uuidv4().substring(0, 6)  //Unique ID
     const userID = req.body.UserID
     findUID(userID)
-        .then(test => {
-            if (!test) {
+        .then(uploaded => {
+            console.log(`${test}`)
+            if (uploaded == false) {
                 console.log("USERID INVALID")
                 res.sendFile(path.join(__dirname + '/upload.html'))
-                exit
+            }
+            else {
+                const filename = req.files[0].originalname
+
+                if (req.files[0].size == 0) {
+                    console.log("This PDF file is empty")
+                }
+                else {
+                    fs.writeFileSync('./' + filename, req.files[0].buffer)
+                    const filepath = path.join(__dirname + "\\" + filename)//Access file path
+                    try {  //Store IDs in a JSON
+                        const bufferData = fs.readFileSync('PDF_storage.json')
+                        const parseData = JSON.parse(bufferData)
+                        parseData[key] = filepath
+                        const newData = JSON.stringify(parseData)
+                        fs.writeFileSync('PDF_storage.json', newData)
+                    } catch (e) {  //error
+                        var newJson = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
+                        fs.appendFile('PDF_storage.json', newJson, err => {
+                            if (err) {
+                                throw err
+                            }
+                        })
+                    }
+                    console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
+                    databaseSendRpdf(filename, key, userID, req.files[0].buffer) //Send to mongoDB
+                }
             }
         })
-
-    const filename = req.files[0].originalname
-
-    if (req.files[0].size == 0) {
-        console.log("This PDF file is empty")
-    }
-    else {
-        fs.writeFileSync('./' + filename, req.files[0].buffer)
-        const filepath = path.join(__dirname + "\\" + filename)//Access file path
-        try {  //Store IDs in a JSON
-            const bufferData = fs.readFileSync('PDF_storage.json')
-            const parseData = JSON.parse(bufferData)
-            parseData[key] = filepath
-            const newData = JSON.stringify(parseData)
-            fs.writeFileSync('PDF_storage.json', newData)
-        } catch (e) {  //error
-            var newJson = JSON.stringify(new function () { this[key] = filepath; }, null, '\t')
-            fs.appendFile('PDF_storage.json', newJson, err => {
-                if (err) {
-                    throw err
-                }
-            })
-        }
-        console.log(`This PDF's key is ${key}! Don't forget it!`) //Tells user the key/unique ID
-        databaseSendRpdf(filename, key, userID, req.files[0].buffer) //Send to mongoDB
-    }
 })
 
 app.post("/access", (req, res) => {
@@ -298,7 +299,7 @@ async function findUID(userID) {
         const query = { userID: `${userID}` }
         const id = await uid.findOne(query)
         console.log(`${id}`)
-        if (id == "null") {
+        if (id == null) {
             return false
         } else {
             //console.log(`${id}`) //this is displaying even in cases where we don't need it, rewrite or remove?
