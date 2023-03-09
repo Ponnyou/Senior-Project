@@ -12,7 +12,8 @@ const app = express()
 const path = require('path');
 const { MongoClient } = require('mongodb');
 var b64 = ""
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const { exit } = require('process');
 //const GridFsStorage = require('multer-storage-gridfs')
 
 
@@ -88,10 +89,14 @@ app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
     const userID = req.body.UserID
-    if (!findUID(userID)) {
-        console.log("USERID INVALID")
-        res.sendFile(path.join(__dirname + '/access.html'))
-    }
+    findUID(userID)
+        .then(test => {
+            if (!test) {
+                console.log("USERID INVALID")
+                res.sendFile(path.join(__dirname + '/upload.html'))
+                exit
+            }
+        })
 
     const filename = req.files[0].originalname
 
@@ -290,10 +295,11 @@ async function findUID(userID) {
 
         const query = { userID: `${userID}` }
         const id = await uid.findOne(query)
-        if (id == null) {
+        console.log(`${id}`)
+        if (id == "null") {
             return false
         } else {
-            //console.log(id) //this is displaying even in cases where we don't need it, rewrite or remove?
+            //console.log(`${id}`) //this is displaying even in cases where we don't need it, rewrite or remove?
             return true
         }
     } catch (e) {
