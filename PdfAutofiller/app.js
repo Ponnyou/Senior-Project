@@ -180,7 +180,7 @@ app.post("/register", (req, res) => {
     const lName = req.body.lName
     const email = req.body.email
     databaseSendUser(fName, lName, email, userID)
-    const api = generateApiKey({ method: 'uuidv4', dashes: false })
+    const api = generateAPIKey({ method: 'uuidv4', dashes: false })
     console.log(`Your userID is ${userID}! Make sure to write it down!`)
     console.log(`Your API key is ${api}! Make sure to write it down!`)
 })
