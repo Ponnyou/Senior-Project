@@ -179,9 +179,12 @@ app.post("/retrieve", (req, res) => {  //REMINDER THIS POST IS UNFINISHED!!!!!!!
             }
             else {
                 try {
-                    const bufferData = fs.readFileSync('PDF_storage.json')
-                    const parseData = JSON.parse(bufferData)
-                    console.log(parseData) //temporary implementation, currently sends all PDF IDs in PDF_storage.json
+                    // const bufferData = fs.readFileSync('PDF_storage.json')
+                    // const parseData = JSON.parse(bufferData)
+                    // console.log(parseData) //temporary implementation, currently sends all PDF IDs in PDF_storage.json
+                    console.log(userID)
+                    console.log(checkFile)
+                    Retrieve(userID, checkFile)
                 }
                 catch (e) {
                     console.log("There is no JSON storing your PDFs! Go to the upload page to upload PDFs to the JSON!")
@@ -238,6 +241,32 @@ async function databaseSendAPI(userID, api) {
     }
 
     finally {
+        await client.close()
+    }
+}
+
+async function Retrieve(userID, filename) {
+    const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net/test"
+    const client = new MongoClient(uri)
+
+    try {
+        const database = client.db("Autofiller_Database")
+        const rpdf = database.collection("Raw_PDF")
+
+        const query = { userID: `${userID}`, Filename: `${filename}` }
+        const options = { projection: {_id:0, Filename:0, userID:0, Contents:0}}
+        const id = rpdf.find(query, options)
+        if (id == null) {
+            console.log("No ID found...")
+            return false
+        } else {
+            await id.forEach(console.log)
+            return true
+        }
+    } catch (e) {
+        console.log(e)
+        return
+    } finally {
         await client.close()
     }
 }
@@ -329,11 +358,10 @@ async function findUID(userID) {
 
         const query = { userID: `${userID}` }
         const id = await uid.findOne(query)
-        console.log(`${id}`)
         if (id == null) {
             return false
         } else {
-            //console.log(`${id}`) //this is displaying even in cases where we don't need it, rewrite or remove?
+            console.log(`${id}`)
             return true
         }
     } catch (e) {
