@@ -1,0 +1,27 @@
+.sidenav {
+    height: 100%;
+    width: 55px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #770000;
+    overflow-x: hidden;
+    padding-top: 30px;
+}
+a:link {
+    color: #6980F5;
+}
+a:visited {
+    color: #FBC544;
+}
+a:hover {
+    color: #A3B8BF;
+}
+body {
+    background-image: url('https://th.bing.com/th/id/R.9b5b80bb36454b0f14e0a8f3b9635362?rik=W5ZZwnL5M2am%2bg&riu=http%3a%2f%2fwallpapercave.com%2fwp%2fxDdL49C.jpg&ehk=nxHVHvJfRYDMGu4kkb4mrLjg0vreuQhPKIi5bT6YayQ%3d&risl=&pid=ImgRaw&r=0%27');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-size: cover;
+    background-color: #E7E7E7;
+}
