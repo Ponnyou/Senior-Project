@@ -23,6 +23,7 @@ app.use(bodyParser.raw())
 app.use(bodyParser.text())
 app.use(upload.any())
 app.use(express.static('public'))
+app.use(express.static(__dirname + '/public'));
 
 const port = 1337  //Host on port 1337
 
