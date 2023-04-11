@@ -4,22 +4,32 @@
 <head>
     <meta charset="utf-8" />
     <title></title>
+    <link rel="stylesheet" type="text/css" href="/css/formatting.css"/>
 </head>
 <body>
-    <h1>This page is for acessing PDFS that you have already uploaded.</h1>
-    <p>Here you can insert the pdf ID, provided by the console after uploading a PDF, and a json file.</p>
-    <p>This form will take the ID and json and fill out the chosen pdf with the json data.</p>
-    <p>Type your User ID to verify user</p>
-    <form action="/access" method="post" enctype="multipart/form-data">
-        <label for="fname">Insert the ID of the PDF to access it:</label>
-        <input type="text" id="PDFID" name="PDFID"><br><br>
-        <label for="UID">Type your user ID here: </label>
-        <input type="text" id="UID" name="UserID"><br><br>
-        <input type="file" id="jsonFile" name="jsonFile" accept=".json"><br><br>
-        <input type="submit" value="submit" id="submit">
+    <div style="margin:75px;">
+        <h1>This page is for acessing PDFS that you have already uploaded.</h1>
+    	<p>Here you can insert the pdf ID, provided by the console after uploading a PDF, and a json file.</p>
+    	<p>This form will take the ID and json and fill out the chosen pdf with the json data.</p>
+    	<p>Type your User ID to verify user</p>
+    	<form action="/access" method="post" enctype="multipart/form-data">
+            <label for="fname">Insert the ID of the PDF to access it:</label>
+            <input type="text" id="PDFID" name="PDFID"><br><br>
+            <label for="UID">Type your user ID here: </label>
+            <input type="text" id="UID" name="UserID"><br><br>
+            <input type="file" id="jsonFile" name="jsonFile" accept=".json"><br><br>
+            <input type="submit" value="submit" id="submit">
     </form>
-    <a href="http://localhost:1337/">Click here to return to the main page.</a>
-    <p></p>
-    <a href="http://localhost:1337/upload">If you want to upload a new PDF instead click here.</a>
+    <div class="sidenav" style="padding-left:5px;">
+        <a href="http://localhost:1337/register">register</a>
+	<p></p>
+        <a href="http://localhost:1337/upload">upload</a>
+	<p></p>
+	<a href="http://localhost:1337/access">access</a>
+	<p></p>
+	<a href="http://localhost:1337/retrieve">retrive</a>
+	<p></p>
+	<a href="http://localhost:1337/home">home</a>
+    </div>
 </body>
 </html>

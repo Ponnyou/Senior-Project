@@ -4,19 +4,30 @@
 <head>
     <meta charset="utf-8" />
     <title style="font-size:60px;">Retrieval PDF page</title>
+    <link rel="stylesheet" type="text/css" href="/css/formatting.css"/>
 </head>
 <body>
-    <h1>This page is for acessing PDF IDs of PDFs that you have already uploaded.</h1>
-    <p>Type your User ID to verify user</p>
-    <form action="/retrieve" method="post" enctype="multipart/form-data">
-        <label for="fname">Insert the PDF that you would like to look up:</label>
-        <input type="file" id="PDFID" name="PDFID" accept=".pdf"><br><br>
-        <label for="UID">Type your user ID here: </label>
-        <input type="text" id="UID" name="UserID"><br><br>
-        <input type="submit">
-    </form>
-    <a href="http://localhost:1337/">Click here to return to the main page.</a>
-    <p></p>
-    <a href="http://localhost:1337/upload">If you want to upload a new PDF instead click here.</a>
+    <div style="margin:75px;">
+        <h1>This page is for acessing PDF IDs of PDFs that you have already uploaded.</h1>
+        <p>Type your User ID to verify user</p>
+        <form action="/retrieve" method="post" enctype="multipart/form-data">
+            <label for="fname">Insert the PDF that you would like to look up:</label>
+            <input type="file" id="PDFID" name="PDFID" accept=".pdf"><br><br>
+            <label for="UID">Type your user ID here: </label>
+            <input type="text" id="UID" name="UserID"><br><br>
+            <input type="submit">
+        </form>
+    </div>
+    <div class="sidenav" style="padding-left:5px;">
+        <a href="http://localhost:1337/register">register</a>
+	<p></p>
+        <a href="http://localhost:1337/upload">upload</a>
+	<p></p>
+	<a href="http://localhost:1337/access">access</a>
+	<p></p>
+	<a href="http://localhost:1337/retrieve">retrive</a>
+	<p></p>
+	<a href="http://localhost:1337/home">home</a>
+    </div>
 </body>
 </html>
