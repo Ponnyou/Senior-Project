@@ -472,6 +472,9 @@ async function run(b64, jsonData) {
     const valid = verify(fields, key, b64)
     var matches = 0
     var fPath = new File('./ asdhwbvjhsavd_filled.pdf')
+    if (fPath.exists) {
+        fs.unlinkSync('./ asdhwbvjhsavd_filled.pdf')
+    }
 
     if (valid == 0) {
         fields.forEach(field => {  //for every field
