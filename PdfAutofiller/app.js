@@ -95,7 +95,7 @@ app.get("/access/preview", (req, res) => { //register account
 app.get("/access/asdhwbvjhsavd_filled.pdf", (req, res) => {  //access uploaded files page path
     res.contentType('application/pdf')
     function test(res) {
-        res.sendFile(path.join(__dirname + '/access.html'))
+        res.sendFile(path.join(__dirname + '/asdhwbvjhsavd_filled.pdf'))
     }
     setTimeout(test, 2000, res)
 })
@@ -297,7 +297,11 @@ async function merge(pdfID, json, userID, res) {
                         fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', PDF)
                     }
                     var pdfFile = fs.createReadStream('./asdhwbvjhsavd_filled.pdf')
-                    pdfFile.pipe(res)
+                    //pdfFile.pipe(res)
+                    function test(pdfFile, res) {
+                        pdfFile.pipe(res)
+                    }
+                    setTimeout(test, 2000, pdfFile, res)
                 })
             //await fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
             const fpdfID = uuidv4().substring(0, 6) //ID for filled PDF
