@@ -2,9 +2,48 @@
 <html>
 <head>
     <title style="font-size:60px;">Upload PDF page</title>
-    <link rel="stylesheet" type="text/css" href="/css/formatting.css"/>
 </head>
+
+<style>
+    .sidenav {
+        height: 100%;
+        width: 55px;
+        position: fixed;
+        z-index: 1;
+        top: 0;
+        left: 0;
+        background-color: #770000;
+        overflow-x: hidden;
+        padding-top: 30px;
+    }
+
+    a:link {
+        color: #6980F5;
+    }
+
+    a:visited {
+        color: #FBC544;
+    }
+
+    a:hover {
+        color: #A3B8BF;
+    }
+
+    body {
+        background-color: #E7E7E7;
+    }
+</style>
+
 <body>
+    <style>
+        body {
+            background-image: url('https://th.bing.com/th/id/R.2a239084ed208c3dff272564226e544e?rik=feLPG94JYBws%2fw&pid=ImgRaw&r=0');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+            color: white;
+        }
+    </style>
     <div style="margin:75px;">
         <h1>About this page:</h1>
         <p>This page takes a pdf and stores it for later use.</p>
@@ -15,18 +54,21 @@
             <label for="UID">Type your user ID here: </label>
             <input type="text" id="UID" name="UserID"><br><br>
             <input type="submit" value="submit" id="submit">
-         </form>
+        </form>
+        <a href="http://localhost:1337/">Click here to return to the main page.</a>
+        <p></p>
+        <a href="http://localhost:1337/access">Click here if you want to look at your uploaded PDFs.</a>
     </div>
     <div class="sidenav" style="padding-left:5px;">
-        <a href="http://localhost:1337/register">register</a>
-	<p></p>
-        <a href="http://localhost:1337/upload">upload</a>
-	<p></p>
-	<a href="http://localhost:1337/access">access</a>
-	<p></p>
-	<a href="http://localhost:1337/retrieve">retrive</a>
-	<p></p>
-	<a href="http://localhost:1337/home">home</a>
+        <a href="http://localhost:1337/register"> register</a>
+        <p> </p>
+        <a href="http://localhost:1337/upload"> upload</a>
+        <p> </p>
+        <a href="http://localhost:1337/access"> access</a>
+        <p> </p>
+        <a href="http://localhost:1337/retrieve"> retrive</a>
+        <p> </p>
+        <a href="http://localhost:1337/"> home</a>
     </div>
 </body>
 </html>
