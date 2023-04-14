@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
     <meta charset="utf-8" />
     <title></title>
@@ -12,14 +12,15 @@
     	<p>Here you can insert the pdf ID, provided by the console after uploading a PDF, and a json file.</p>
     	<p>This form will take the ID and json and fill out the chosen pdf with the json data.</p>
     	<p>Type your User ID to verify user</p>
-    	<form action="/access" method="post" enctype="multipart/form-data">
+        <form action="/access" method="post" enctype="multipart/form-data">
             <label for="fname">Insert the ID of the PDF to access it:</label>
             <input type="text" id="PDFID" name="PDFID"><br><br>
             <label for="UID">Type your user ID here: </label>
             <input type="text" id="UID" name="UserID"><br><br>
             <input type="file" id="jsonFile" name="jsonFile" accept=".json"><br><br>
             <input type="submit" value="submit" id="submit">
-    </form>
+        </form>
+    </div>
     <div class="sidenav" style="padding-left:5px;">
         <a href="http://localhost:1337/register">register</a>
 	<p></p>
@@ -29,7 +30,7 @@
 	<p></p>
 	<a href="http://localhost:1337/retrieve">retrive</a>
 	<p></p>
-	<a href="http://localhost:1337/home">home</a>
+	<a href="http://localhost:1337/">home</a>
     </div>
 </body>
 </html>

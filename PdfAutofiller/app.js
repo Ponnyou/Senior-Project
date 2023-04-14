@@ -88,6 +88,18 @@ app.get("/register", (req, res) => { //register account
     res.sendFile(__dirname + '/register.html')
 })
 
+app.get("/access/preview", (req, res) => { //register account
+    res.sendFile(__dirname + '/access2.html')
+})
+
+app.get("/access/asdhwbvjhsavd_filled.pdf", (req, res) => {  //access uploaded files page path
+    res.contentType('application/pdf')
+    function test(res) {
+        res.sendFile(path.join(__dirname + '/access.html'))
+    }
+    setTimeout(test, 2000, res)
+})
+
 app.post("/upload", (req, res) => {
     res.sendFile(path.join(__dirname + '/upload.html'))  //send PDF
     const key = uuidv4().substring(0, 6)  //Unique ID
@@ -136,11 +148,11 @@ app.post("/access", (req, res) => {
     res.contentType('application/pdf')
     var data = databaseRetrieveRpdf(req.body.PDFID, req.files[0], userID, res)
         .then(async function(){
-            res.redirect('/')
+            res.redirect('/access/preview')
             await res.end()
-            if (fPath.exists) {
-                fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
-            }
+            //if (fPath.exists) {
+                //fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+            //}
         })
     
 })
@@ -279,13 +291,13 @@ async function merge(pdfID, json, userID, res) {
             const query = { Id: pdfID } //Finds the databse entry with the pdf ID
             const file = await result.findOne(query)
 
-            await encodePDF(file.FilePath, sentJson) //The fields won't merge
+            encodePDF(file.FilePath, sentJson) //The fields won't merge
                 .then(async function (PDF) {
                     if (!(fPath.exists)) {
-                        await fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', PDF)
+                        fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', PDF)
                     }
-                    var pdfFile = await fs.createReadStream('./asdhwbvjhsavd_filled.pdf')
-                    await pdfFile.pipe(res)
+                    var pdfFile = fs.createReadStream('./asdhwbvjhsavd_filled.pdf')
+                    pdfFile.pipe(res)
                 })
             //await fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
             const fpdfID = uuidv4().substring(0, 6) //ID for filled PDF
@@ -497,7 +509,7 @@ async function run(b64, jsonData) {
     fs.unlinkSync('./asdhwbvjhsavd.pdf')  //removes original unfilled pdf
     let encodedPDF = await base64.base64Encode('./asdhwbvjhsavd_filled.pdf')  //encode into base64
     console.log(typeof encodedPDF)
-    fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+    //fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
     return await filled_pdf
 }
 
