@@ -14,6 +14,8 @@ const { MongoClient } = require('mongodb');
 var b64 = ""
 const mongoose = require('mongoose')
 const { generateApiKey } = require('generate-api-key')
+const axios = require('axios');
+const File = require('File');
 //const GridFsStorage = require('multer-storage-gridfs')
 
 
@@ -57,7 +59,7 @@ app.post("/", (req, res) => {
     if (stop == 0) {
         run(b64, jsonData)  //fill in PDF using the data from the 2 files
             .then(PDF => {
-                console.log(PDF)
+                //console.log(PDF)
                 res.contentType("application/pdf")
                 res.send(PDF)
                 fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')  //removes saved filled pdf
@@ -128,9 +130,18 @@ app.post("/upload", (req, res) => {
 
 app.post("/access", (req, res) => {
     const userID = req.body.UserID
+    var fPath = new File('./asdhwbvjhsavd_filled.pdf')
     console.log(userID)
+    res.contentType('application/pdf')
     var data = databaseRetrieveRpdf(req.body.PDFID, req.files[0], userID, res)
-    //res.sendFile(path.join(__dirname + '/access.html'))
+        .then(async function(){
+            res.redirect('/')
+            await res.end()
+            if (fPath.exists) {
+                fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+            }
+        })
+    
 })
 
 app.post("/retrieve", (req, res) => {  //REMINDER THIS POST IS UNFINISHED!!!!!!!!
@@ -182,7 +193,7 @@ async function databaseSendUser(fName, lName, email, userID) {
         const collection = client.db('Autofiller_Database').collection('User')
         const newData = { First_name: fName, Last_name: lName, email: email, userID: userID }
         await collection.insertOne(newData)
-        //await createListing(clinet.db.collection('User'), { First_name: fName, Last_name: lName, email: email, userID: userID })
+        await createListing(clinet.db.collection('User'), { First_name: fName, Last_name: lName, email: email, userID: userID })
     } catch (e) {
         console.log(e)
         return
@@ -258,7 +269,7 @@ async function merge(pdfID, json, userID, res) {
     const uri = "mongodb+srv://pdfteam:QSTMiCd0lfLNx96q@pdfstorage.1qevxtf.mongodb.net"
     const client = new MongoClient(uri)
     const result = await client.db("Autofiller_Database").collection("Raw_PDF")
-
+    var fPath = new File('./asdhwbvjhsavd_filled.pdf')
 
     const isJson = validateJSON(json.buffer.toString()) //Determines if Json exists
     if (isJson) {
@@ -267,15 +278,17 @@ async function merge(pdfID, json, userID, res) {
             const query = { Id: pdfID } //Finds the databse entry with the pdf ID
             const file = await result.findOne(query)
 
-            encodePDF(file.FilePath, sentJson) //The fields won't merge
-                .then(PDF => {
-                    console.log(PDF)
-                    res.contentType("application/pdf")
-                    res.send(PDF)
-                    fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
+            await encodePDF(file.FilePath, sentJson) //The fields won't merge
+                .then(async function (PDF) {
+                    if (!(fPath.exists)) {
+                        await fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', PDF)
+                    }
+                    var pdfFile = await fs.createReadStream('./asdhwbvjhsavd_filled.pdf')
+                    await pdfFile.pipe(res)
                 })
+            //await fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
             const fpdfID = uuidv4().substring(0, 6) //ID for filled PDF
-            console.log(`Filled PDF's key is ${fpdfID}! Don't forget it!`)
+            //console.log(`Filled PDF's key is ${fpdfID}! Don't forget it!`)
             var uploadTime = new Date().toLocaleString();
             databaseSendFpdf(pdfID, fpdfID, userID, uploadTime, file.FilePath)
             databaseSendData(pdfID, json.originalname, uploadTime)
@@ -441,6 +454,7 @@ async function run(b64, jsonData) {
     const key = Object.keys(jsonData)  //get keys from JSON
     const valid = verify(fields, key, b64)
     var matches = 0
+    var fPath = new File('./ asdhwbvjhsavd_filled.pdf')
 
     if (valid == 0) {
         fields.forEach(field => {  //for every field
@@ -475,11 +489,14 @@ async function run(b64, jsonData) {
     }
     console.log("Your JSON and PDF have", matches, "matching fields")
     formPdf.flatten();  //flattens the PDF (marks as Read-Only/Non-fillable/Filled/etc.)
-    fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', await pdf.save());  //save the pdf with a gibberish name to not overwrite any of the user's pdfs
+    if (!(fPath.exists)) {
+        fs.writeFileSync('./asdhwbvjhsavd_filled.pdf', await pdf.save())//save the pdf with a gibberish name to not overwrite any of the user's pdfs
+    }
     const filled_pdf = fs.readFileSync('./asdhwbvjhsavd_filled.pdf')
     fs.unlinkSync('./asdhwbvjhsavd.pdf')  //removes original unfilled pdf
     let encodedPDF = await base64.base64Encode('./asdhwbvjhsavd_filled.pdf')  //encode into base64
     console.log(typeof encodedPDF)
+    fs.unlinkSync('./asdhwbvjhsavd_filled.pdf')
     return await filled_pdf
 }
 
